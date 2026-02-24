@@ -19,7 +19,7 @@ def extract_keypoints(DATA_BASE_PATH, IMG_NAMES):
     pts2 = []
     good = []
     for i,(m,n) in enumerate(matches):
-        if m.distance < 0.45*n.distance:
+        if m.distance < 0.55*n.distance:
             pts2.append(kp2[m.trainIdx].pt)
             pts1.append(kp1[m.queryIdx].pt)
             good.append(m)

@@ -10,6 +10,7 @@ from EssentialMatrixFromFundamentalMatrix import *
 from ExtractCameraPose import *
 from LinearTriangulation import *
 from SavePLY import *
+from NonLinearTriangulation import *
 
 
 if __name__ == "__main__":
@@ -22,8 +23,11 @@ if __name__ == "__main__":
     print(f"Rotation matrix: \n {R}")
     print(f"Translation vector: \n {t}")
     points3d = linear_triangulation(pts1, pts2, K, R, t)
-    save_ply(points3d.T, "output.ply")
-    plt.scatter(points3d[0], points3d[2], color='blue', marker='.')
-    plt.scatter(t[0], t[2], color='red', marker='x')
-    plt.scatter(0, 0, color='green', marker='o')
+    points3d_non_linear = []
+    for i in range(len(pts1)):      
+        p3d = non_linear_triangulation(pts1[i], pts2[i], K, R, t)
+        points3d_non_linear.append(p3d)
+    plt.scatter(points3d[0], points3d[2], s=10, c='b', label='Linear Triangulation')
+    plt.scatter([p[0] for p in points3d_non_linear], [p[2] for p in points3d_non_linear], s=3, c='r', label='Non-Linear Triangulation')
+    plt.legend()
     plt.show()
