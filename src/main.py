@@ -1,48 +1,33 @@
-import cv2 
-from matplotlib import pyplot as plt
-from numpy.linalg import svd
-import numpy as np
 import os
-
+import cv2 
+import numpy as np
 from config import *
+from numpy.linalg import svd
+from matplotlib import pyplot as plt
+from EstimateFundamentalMatrix import *
+from GetInlierRANSANC import *
+from EssentialMatrixFromFundamentalMatrix import *
+from ExtractCameraPose import *
+from LinearTriangulation import *
+from SavePLY import *
+from NonLinearTriangulation import *
 
-imgs = [cv2.imread(os.path.join(DATA_BASE_PATH, i), 0) for i in IMG_NAMES]
-K = np.array([531.122155322710, 0, 407.192550839899,
-			0, 531.541737503901, 313.308715048366,
-			0, 0, 1]).reshape((3,3))
-img1 = imgs[0]
-img2 = imgs[1]
 
-sift = cv2.SIFT_create()
-
-kp1, des1 = sift.detectAndCompute(img1,None)
-kp2, des2 = sift.detectAndCompute(img2,None)
-
-FLANN_INDEX_KDTREE = 1
-index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
-search_params = dict(checks=50)
-flann = cv2.FlannBasedMatcher(index_params,search_params)
-matches = flann.knnMatch(des1,des2,k=2)
-
-pts1 = []
-pts2 = []
-
-for i,(m,n) in enumerate(matches):
-	if m.distance < 0.8*n.distance:
-		pts2.append(kp2[m.trainIdx].pt)
-		pts1.append(kp1[m.queryIdx].pt)
-
-pts1 = np.int32(pts1)
-pts2 = np.int32(pts2)
-
-F, mask = cv2.findFundamentalMat(pts1,pts2,cv2.FM_8POINT) 
-U, S, Vt = np.linalg.svd(F)
-S[2] = 0  
-F = U @ np.diag(S) @ Vt
-
-E = K.T @ F @ K
-U, S, Vt = np.linalg.svd(F)
-S = np.diag((1,1,0))
-E = U @ S @ Vt  
-
-print(E)
+if __name__ == "__main__":
+    good, pts1, pts2 = extract_keypoints(DATA_BASE_PATH, IMG_NAMES)
+    E, mask = estimate_essential_matrix(K, pts1, pts2)
+    print(f"Essential matrix: \n {E}")
+    pts1 = pts1[mask.ravel() == 1]
+    pts2 = pts2[mask.ravel() == 1]
+    R, t = extract_camera_pose(E, pts1, pts2, K)
+    print(f"Rotation matrix: \n {R}")
+    print(f"Translation vector: \n {t}")
+    points3d = linear_triangulation(pts1, pts2, K, R, t)
+    points3d_non_linear = []
+    for i in range(len(pts1)):      
+        p3d = non_linear_triangulation(pts1[i], pts2[i], K, R, t)
+        points3d_non_linear.append(p3d)
+    plt.scatter(points3d[0], points3d[2], s=10, c='b', label='Linear Triangulation')
+    plt.scatter([p[0] for p in points3d_non_linear], [p[2] for p in points3d_non_linear], s=3, c='r', label='Non-Linear Triangulation')
+    plt.legend()
+    plt.show()
