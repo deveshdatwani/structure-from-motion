@@ -19,13 +19,12 @@ def calibrate(show_pics=False):
     n_cols = 6
     termination_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
     world_points = np.zeros((n_rows * n_cols, 3), np.float32)
-    world_points[:, :2] = np.mgrid[0:n_rows, 0:n_cols].T.reshape(-1, 2)
+    world_points[:, :2] = np.mgrid[0:n_rows, 0:n_cols].T.reshape(-1, 2) # [0,0][0,1],[0,2] -- arbitary set 3D world points, here we set z=0, and x,y are the grid coordinates of the chessboard corners
     world_points_list = []
     image_points_list = []
     for image_path in image_path_list:
         print(f"processing {image_path}")
         img = cv2.imread(image_path)
-        print(img.shape)
         img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         found_corners, img_corners = cv2.findChessboardCorners(img_gray, (n_rows, n_cols), None)
         cv2.imshow('img', img)
